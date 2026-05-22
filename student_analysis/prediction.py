@@ -22,8 +22,8 @@ def load_models():
     """Load pre-trained models from submission folder"""
     try:
         # Model ada di folder submission/
-        rf_model = joblib.load('submission/random_forest_model.pkl')
-        dt_model = joblib.load('submission/decision_tree_model.pkl')
+        rf_model = joblib.load('student_analysis/random_forest_model.pkl')
+        dt_model = joblib.load('student_analysis/decision_tree_model.pkl')
         
         # Asumsikan feature_names_in_ ada di model
         if not hasattr(rf_model, 'feature_names_in_') or not hasattr(dt_model, 'feature_names_in_'):
