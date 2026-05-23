@@ -127,33 +127,55 @@ def sample_data():
 
 
 # ── Chart helpers ──────────────────────────────────────────────────────────────
-def stacked_pct_bar(df, group_col, title, height=400, sort_by_dropout=False):
+# Semua chart pakai HEIGHT tetap 420px.
+# Margin bottom dihitung otomatis dari panjang label terpanjang.
+# Label dirotasi kalau ada yang panjang, supaya tidak menimpa legenda.
+CHART_HEIGHT = 420
+TITLE_MARGIN  = 52   # ruang atas: judul
+LEGEND_MARGIN = 48   # ruang bawah minimal: legenda saja (label pendek)
+CHARS_PER_PX  = 5.5  # perkiraan lebar 1 karakter dalam px pada font-size 11
+ROTATION_THRESHOLD = 12  # rotasi kalau label terpanjang > N karakter
+
+def stacked_pct_bar(df, group_col, title, sort_by_dropout=False):
     d = df[[group_col, 'Target']].dropna(subset=[group_col])
     grp = d.groupby([group_col, 'Target']).size().unstack(fill_value=0)
     pct = (grp.div(grp.sum(axis=1), axis=0) * 100).reset_index()
     if sort_by_dropout and 'Dropout' in pct.columns:
         pct = pct.sort_values('Dropout', ascending=False)
     cols = [c for c in ['Dropout', 'Enrolled', 'Graduate'] if c in pct.columns]
+
+    # Hitung margin bottom & rotasi dari panjang label x-axis
+    labels_list = [str(v) for v in pct[group_col]]
+    max_label_len = max(len(l) for l in labels_list) if labels_list else 0
+    needs_rotation = max_label_len > ROTATION_THRESHOLD
+    # Estimasi tinggi area label saat dirotasi -40°: panjang * sin(40°) * char_px
+    import math
+    label_px = int(max_label_len * CHARS_PER_PX * math.sin(math.radians(40))) if needs_rotation else 0
+    b_margin = LEGEND_MARGIN + label_px  # legenda + label rotasi
+
     fig = px.bar(pct, x=group_col, y=cols, title=title,
                  color_discrete_map=COLOR_MAP, barmode='stack',
-                 labels={'value': 'Persentase (%)', group_col: '', 'variable': 'Status'})
+                 labels={'value': '%', group_col: '', 'variable': 'Status'})
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         font_color='#9ca3af',
         title=dict(text=title, font=dict(color='#e8eaf0', size=13),
-                   x=0, xanchor='left', pad=dict(t=0, b=12)),
+                   x=0, xanchor='left', pad=dict(b=8)),
         legend=dict(
             orientation='h',
-            yanchor='top', y=-0.18,
+            yanchor='top', y=-0.12 if not needs_rotation else -(0.12 + label_px / CHART_HEIGHT),
             xanchor='center', x=0.5,
             font=dict(color='#9ca3af', size=11),
             bgcolor='rgba(0,0,0,0)',
             title_text='',
         ),
-        margin=dict(l=8, r=8, t=48, b=56),
-        height=height,
-        xaxis=dict(gridcolor='#1e2330', linecolor='#252a38',
-                   tickfont=dict(color='#6b7280', size=11)),
+        margin=dict(l=8, r=8, t=TITLE_MARGIN, b=b_margin),
+        height=CHART_HEIGHT,
+        xaxis=dict(
+            gridcolor='#1e2330', linecolor='#252a38',
+            tickfont=dict(color='#6b7280', size=10),
+            tickangle=-40 if needs_rotation else 0,
+        ),
         yaxis=dict(gridcolor='#1e2330', linecolor='#252a38',
                    tickfont=dict(color='#6b7280', size=11)),
         bargap=0.3,
@@ -184,21 +206,19 @@ def grade_bar(df, grade_col, title):
     d2 = d.copy()
     d2['Kategori Nilai'] = pd.cut(d2[grade_col], bins=bins, labels=labels)
     d2 = d2.dropna(subset=['Kategori Nilai'])
-    return stacked_pct_bar(d2, 'Kategori Nilai', title, height=400)
+    return stacked_pct_bar(d2, 'Kategori Nilai', title)
 
 
 def donut_chart(df):
     vc = df['Target'].value_counts().reset_index()
     vc.columns = ['Status', 'Jumlah']
     fig = px.pie(vc, values='Jumlah', names='Status', hole=0.55,
-                 color='Status', color_discrete_map=COLOR_MAP,
-                 title='Distribusi Status Siswa')
-    fig.update_traces(textinfo='percent+label', textfont_color='white',
-                      textfont_size=12)
+                 color='Status', color_discrete_map=COLOR_MAP)
+    fig.update_traces(textinfo='percent+label', textfont_color='white', textfont_size=12)
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         title=dict(text='Distribusi Status Siswa', font=dict(color='#e8eaf0', size=13),
-                   x=0, xanchor='left', pad=dict(t=0, b=12)),
+                   x=0, xanchor='left', pad=dict(b=8)),
         legend=dict(
             orientation='h',
             yanchor='top', y=-0.08,
@@ -206,8 +226,8 @@ def donut_chart(df):
             font=dict(color='#9ca3af', size=11),
             bgcolor='rgba(0,0,0,0)',
         ),
-        margin=dict(l=8, r=8, t=48, b=56),
-        height=400,
+        margin=dict(l=8, r=8, t=TITLE_MARGIN, b=LEGEND_MARGIN),
+        height=CHART_HEIGHT,
     )
     return fig
 
@@ -407,19 +427,15 @@ else:
 
     with g1:
         if grade_cols:
-            # Pilih kolom grade semester 1 jika ada, kalau tidak ambil yang pertama
             sem1 = next((c for c in grade_cols if '1st' in c or '1_sem' in c), grade_cols[0])
-            # Debug info kecil
             non_zero = (df[sem1] > 0).sum()
-            st.caption(f"Kolom: `{sem1}` · {non_zero:,} data non-zero · "
-                       f"range {df[sem1].min():.1f}–{df[sem1].max():.1f}")
             if non_zero > 10:
                 st.plotly_chart(
-                    grade_bar(df, sem1, f'Nilai Semester 1 vs Status (%)'),
+                    grade_bar(df, sem1, 'Nilai Semester 1 vs Status (%)'),
                     use_container_width=True
                 )
             else:
-                st.warning(f"Kolom `{sem1}` hampir semua nol, tidak bisa diplot.")
+                st.warning("Data nilai semester 1 tidak cukup untuk divisualisasikan.")
         else:
             st.info("Kolom grade tidak ditemukan")
 
@@ -449,10 +465,8 @@ else:
         with g3:
             non_zero2 = (df[sem2] > 0).sum()
             if non_zero2 > 10:
-                st.caption(f"Kolom: `{sem2}` · {non_zero2:,} data non-zero · "
-                           f"range {df[sem2].min():.1f}–{df[sem2].max():.1f}")
                 st.plotly_chart(
-                    grade_bar(df, sem2, f'Nilai Semester 2 vs Status (%)'),
+                    grade_bar(df, sem2, 'Nilai Semester 2 vs Status (%)'),
                     use_container_width=True
                 )
 
@@ -471,8 +485,7 @@ with a1:
             d['Application_mode'].astype(str))
         st.plotly_chart(
             stacked_pct_bar(d, 'Jalur Pendaftaran',
-                            'Jalur Pendaftaran vs Status (%) — Urutkan by Dropout',
-                            height=480, sort_by_dropout=True),
+                            'Jalur Pendaftaran vs Status (%) — Urutkan by Dropout', sort_by_dropout=True),
             use_container_width=True
         )
     else:
@@ -484,7 +497,7 @@ with a2:
         d['Fase Pendaftaran'] = d['Application_order'].astype(str)
         st.plotly_chart(
             stacked_pct_bar(d, 'Fase Pendaftaran',
-                            'Fase/Urutan Pendaftaran vs Status (%)', height=480),
+                            'Fase/Urutan Pendaftaran vs Status (%)'),
             use_container_width=True
         )
     else:
@@ -509,8 +522,7 @@ with p1:
         d['Pendidikan Ayah'] = d[father_col].map(QUALIFICATION_MAP).fillna(d[father_col].astype(str))
         st.plotly_chart(
             stacked_pct_bar(d, 'Pendidikan Ayah',
-                            "Pendidikan Ayah vs Status (%) — Urutkan by Dropout",
-                            height=480, sort_by_dropout=True),
+                            "Pendidikan Ayah vs Status (%) — Urutkan by Dropout", sort_by_dropout=True),
             use_container_width=True
         )
     else:
@@ -522,8 +534,7 @@ with p2:
         d['Pendidikan Ibu'] = d[mother_col].map(QUALIFICATION_MAP).fillna(d[mother_col].astype(str))
         st.plotly_chart(
             stacked_pct_bar(d, 'Pendidikan Ibu',
-                            "Pendidikan Ibu vs Status (%) — Urutkan by Dropout",
-                            height=480, sort_by_dropout=True),
+                            "Pendidikan Ibu vs Status (%) — Urutkan by Dropout", sort_by_dropout=True),
             use_container_width=True
         )
     else:
