@@ -55,8 +55,8 @@ Di sini saya menggunakan streamlit untuk membuat dashboard. Saya juga sudah depl
 Berikut link github dari aplikasi ini:  
 [Github Dashboard](https://github.com/ivandim123/student_dashboard_prediction_analysis/)  
 Berikut link dashboard dari aplikasi ini:  
-[Streamlit Dashboard](https://studentdashboardpredictionanalysis-qy7rbnkmrwubma9tc2cjlk.streamlit.app/)
-Berikut link prediction dari aplikasi ini:
+[Streamlit Dashboard](https://studentdashboardpredictionanalysis-qy7rbnkmrwubma9tc2cjlk.streamlit.app/)  
+Berikut link prediction dari aplikasi ini:  
 [Streamlit Prediction](https://studentdashboardpredictionanalysis-qmvfjr7rewmeybhmj5tjxf.streamlit.app/)
 
 ## Menjalankan Sistem Machine Learning
