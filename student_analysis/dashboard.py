@@ -127,7 +127,7 @@ def sample_data():
 
 
 # ── Chart helpers ──────────────────────────────────────────────────────────────
-def stacked_pct_bar(df, group_col, title, height=340, sort_by_dropout=False):
+def stacked_pct_bar(df, group_col, title, height=400, sort_by_dropout=False):
     d = df[[group_col, 'Target']].dropna(subset=[group_col])
     grp = d.groupby([group_col, 'Target']).size().unstack(fill_value=0)
     pct = (grp.div(grp.sum(axis=1), axis=0) * 100).reset_index()
@@ -139,13 +139,24 @@ def stacked_pct_bar(df, group_col, title, height=340, sort_by_dropout=False):
                  labels={'value': 'Persentase (%)', group_col: '', 'variable': 'Status'})
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        font_color='#9ca3af', title_font_color='#e8eaf0', title_font_size=13,
-        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1,
-                    font_color='#9ca3af', bgcolor='rgba(0,0,0,0)', title_text=''),
-        margin=dict(l=0, r=0, t=44, b=0), height=height,
-        xaxis=dict(gridcolor='#1e2330', linecolor='#252a38', tickfont_color='#6b7280'),
-        yaxis=dict(gridcolor='#1e2330', linecolor='#252a38', tickfont_color='#6b7280'),
-        bargap=0.25,
+        font_color='#9ca3af',
+        title=dict(text=title, font=dict(color='#e8eaf0', size=13),
+                   x=0, xanchor='left', pad=dict(t=0, b=12)),
+        legend=dict(
+            orientation='h',
+            yanchor='top', y=-0.18,
+            xanchor='center', x=0.5,
+            font=dict(color='#9ca3af', size=11),
+            bgcolor='rgba(0,0,0,0)',
+            title_text='',
+        ),
+        margin=dict(l=8, r=8, t=48, b=56),
+        height=height,
+        xaxis=dict(gridcolor='#1e2330', linecolor='#252a38',
+                   tickfont=dict(color='#6b7280', size=11)),
+        yaxis=dict(gridcolor='#1e2330', linecolor='#252a38',
+                   tickfont=dict(color='#6b7280', size=11)),
+        bargap=0.3,
     )
     fig.update_traces(marker_line_width=0)
     return fig
@@ -173,7 +184,7 @@ def grade_bar(df, grade_col, title):
     d2 = d.copy()
     d2['Kategori Nilai'] = pd.cut(d2[grade_col], bins=bins, labels=labels)
     d2 = d2.dropna(subset=['Kategori Nilai'])
-    return stacked_pct_bar(d2, 'Kategori Nilai', title)
+    return stacked_pct_bar(d2, 'Kategori Nilai', title, height=400)
 
 
 def donut_chart(df):
@@ -186,9 +197,17 @@ def donut_chart(df):
                       textfont_size=12)
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        font_color='#9ca3af', title_font_color='#e8eaf0', title_font_size=13,
-        showlegend=False,
-        margin=dict(l=0, r=0, t=44, b=0), height=340,
+        title=dict(text='Distribusi Status Siswa', font=dict(color='#e8eaf0', size=13),
+                   x=0, xanchor='left', pad=dict(t=0, b=12)),
+        legend=dict(
+            orientation='h',
+            yanchor='top', y=-0.08,
+            xanchor='center', x=0.5,
+            font=dict(color='#9ca3af', size=11),
+            bgcolor='rgba(0,0,0,0)',
+        ),
+        margin=dict(l=8, r=8, t=48, b=56),
+        height=400,
     )
     return fig
 
@@ -453,7 +472,7 @@ with a1:
         st.plotly_chart(
             stacked_pct_bar(d, 'Jalur Pendaftaran',
                             'Jalur Pendaftaran vs Status (%) — Urutkan by Dropout',
-                            height=420, sort_by_dropout=True),
+                            height=480, sort_by_dropout=True),
             use_container_width=True
         )
     else:
@@ -465,7 +484,7 @@ with a2:
         d['Fase Pendaftaran'] = d['Application_order'].astype(str)
         st.plotly_chart(
             stacked_pct_bar(d, 'Fase Pendaftaran',
-                            'Fase/Urutan Pendaftaran vs Status (%)', height=420),
+                            'Fase/Urutan Pendaftaran vs Status (%)', height=480),
             use_container_width=True
         )
     else:
@@ -491,7 +510,7 @@ with p1:
         st.plotly_chart(
             stacked_pct_bar(d, 'Pendidikan Ayah',
                             "Pendidikan Ayah vs Status (%) — Urutkan by Dropout",
-                            height=420, sort_by_dropout=True),
+                            height=480, sort_by_dropout=True),
             use_container_width=True
         )
     else:
@@ -504,7 +523,7 @@ with p2:
         st.plotly_chart(
             stacked_pct_bar(d, 'Pendidikan Ibu',
                             "Pendidikan Ibu vs Status (%) — Urutkan by Dropout",
-                            height=420, sort_by_dropout=True),
+                            height=480, sort_by_dropout=True),
             use_container_width=True
         )
     else:
