@@ -34,11 +34,7 @@ pipenv install
 pipenv shell
 pip install -r requirements.txt
 ```
-Di sini saya menggunakan streamlit untuk membuat dashboard. Saya juga sudah deploy aplikasi dashboard ini ke streamlit dengan integrasi bersama github.  
-Berikut link github dari aplikasi ini:  
-[Github Dashboard](https://github.com/ivandim123/DS_PB/blob/main/submission/)  
-Berikut link dashboard dari aplikasi ini:  
-[Streamlit Dashboard](https://feywwqnb5dyw92gcgqkmp7.streamlit.app/) 
+
 
 ## Business Dashboard
 Dashboard yang sudah saya buat memiliki beberapa fitur sebagai berikut:
@@ -57,9 +53,11 @@ Setelah menganalisis dashboard yang telah dibuat, berikut insight dari saya:
 
 Di sini saya menggunakan streamlit untuk membuat dashboard. Saya juga sudah deploy aplikasi dashboard ini ke streamlit dengan integrasi bersama github.  
 Berikut link github dari aplikasi ini:  
-[Github Dashboard](https://github.com/ivandim123/DS_PB/blob/main/submission/)  
+[Github Dashboard](https://github.com/ivandim123/student_dashboard_prediction_analysis/)  
 Berikut link dashboard dari aplikasi ini:  
-[Streamlit Dashboard](https://feywwqnb5dyw92gcgqkmp7.streamlit.app/) 
+[Streamlit Dashboard](https://studentdashboardpredictionanalysis-qy7rbnkmrwubma9tc2cjlk.streamlit.app/)
+Berikut link prediction dari aplikasi ini:
+[Streamlit Prediction](https://studentdashboardpredictionanalysis-qmvfjr7rewmeybhmj5tjxf.streamlit.app/)
 
 ## Menjalankan Sistem Machine Learning
 
