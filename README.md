@@ -13,8 +13,8 @@ Di sini kita akan membuat dashboard untuk evaluasi berbagai parameter dan juga m
 
 ### Persiapan
 
-Sumber data: [Jaya Jaya Institut Siswa](https://github.com/dicodingacademy/dicoding_dataset/blob/main/students_performance/README.md)
-Acknowledgements: [UCI Machine Learning Repository](https://doi.org/10.24432/C5MC89)
+Sumber data: [Jaya Jaya Institut Siswa](https://github.com/dicodingacademy/dicoding_dataset/blob/main/students_performance/README.md)  
+Acknowledgements: [UCI Machine Learning Repository](https://doi.org/10.24432/C5MC89)  
 Deskripsi umum dataset: Sebuah dataset yang dibuat dari institusi pendidikan tinggi (diperoleh dari beberapa database terpisah) yang berkaitan dengan mahasiswa yang terdaftar dalam berbagai program sarjana, seperti agronomi, desain, pendidikan, keperawatan, jurnalisme, manajemen, layanan sosial, dan teknologi. Dataset ini mencakup informasi yang diketahui pada saat pendaftaran mahasiswa (jalur akademik, demografi, dan faktor sosial-ekonomi) serta kinerja akademik mahasiswa pada akhir semester pertama dan kedua. Data ini digunakan untuk membangun model klasifikasi untuk memprediksi dropout dan kesuksesan akademik mahasiswa.
 
 Setup environment:
