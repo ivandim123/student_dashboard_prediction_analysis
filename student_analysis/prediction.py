@@ -196,24 +196,53 @@ h3 { font-size: 1.2rem !important; }
     background: rgba(26,26,46,0.04) !important;
 }
 
+/* ── Input labels ── */
+.stTextInput label, .stNumberInput label, .stSelectbox label,
+.stSlider label, .stFileUploader label {
+    color: #2C2C3E !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em !important;
+    margin-bottom: 2px !important;
+}
+
 /* ── Form inputs ── */
-.stTextInput input, .stNumberInput input, .stSelectbox select {
+.stTextInput input, .stNumberInput input {
     border-radius: 8px !important;
-    border: 1px solid #E0DED8 !important;
+    border: 1.5px solid #C8C6C0 !important;
     font-family: 'DM Sans', sans-serif !important;
-    background: #FFFFFF !important;
-    transition: border-color 0.2s !important;
+    background: #F7F6F2 !important;
+    color: #1A1A2E !important;
+    font-size: 0.9rem !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
 }
 .stTextInput input:focus, .stNumberInput input:focus {
     border-color: #6366F1 !important;
+    background: #FFFFFF !important;
     box-shadow: 0 0 0 3px rgba(99,102,241,0.12) !important;
+}
+.stTextInput input::placeholder, .stNumberInput input::placeholder {
+    color: #9999AA !important;
+}
+
+/* ── Number input stepper buttons ── */
+[data-testid="stNumberInput"] button {
+    background: #EEECEA !important;
+    border: 1px solid #D0CEC8 !important;
+    color: #444 !important;
 }
 
 /* ── Selectbox ── */
 [data-testid="stSelectbox"] > div > div {
     border-radius: 8px !important;
-    border: 1px solid #E0DED8 !important;
+    border: 1.5px solid #C8C6C0 !important;
+    background: #F7F6F2 !important;
+    color: #1A1A2E !important;
+}
+[data-testid="stSelectbox"] > div > div:focus-within {
+    border-color: #6366F1 !important;
     background: #FFFFFF !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12) !important;
 }
 
 /* ── Slider ── */
@@ -227,13 +256,26 @@ h3 { font-size: 1.2rem !important; }
     font-size: 0.75rem !important;
 }
 
-/* ── Form container ── */
+/* ── Form container — light gray so inputs (F7F6F2) contrast against it ── */
 [data-testid="stForm"] {
-    background: #FFFFFF !important;
-    border: 1px solid #E8E6E0 !important;
+    background: #EEECEA !important;
+    border: 1.5px solid #D0CEC8 !important;
     border-radius: 14px !important;
-    padding: 1.5rem !important;
+    padding: 1.75rem !important;
 }
+
+/* ── Section divider inside form ── */
+.form-section {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #7777AA;
+    border-bottom: 1.5px solid #D0CEC8;
+    padding-bottom: 6px;
+    margin: 1.25rem 0 0.75rem;
+}
+.form-section:first-child { margin-top: 0; }
 
 /* ── Expander ── */
 .streamlit-expanderHeader {
@@ -522,75 +564,187 @@ if "Input Manual" in prediction_mode:
 
     input_data = {}
     MARITAL_STATUS_OPTIONS  = {1:'Single',2:'Married',3:'Widower',4:'Divorced',5:'Facto union',6:'Legally separated'}
-    DAYTIME_EVENING_OPTIONS = {1:'Daytime',0:'Evening'}
-    YES_NO_OPTIONS          = {1:'Yes',0:'No'}
-    GENDER_OPTIONS          = {1:'Male',0:'Female'}
+    DAYTIME_EVENING_OPTIONS = {1:'Daytime (Pagi)',0:'Evening (Malam)'}
+    YES_NO_OPTIONS          = {1:'Ya',0:'Tidak'}
+    GENDER_OPTIONS          = {1:'Laki-laki',0:'Perempuan'}
 
-    def cat_input(feature, opts, default_key):
+    def cat_input(label, feature, opts, default_key, help_text=""):
         disp = list(opts.values())
-        sel = st.selectbox(
-            feature.replace('_',' ').title(),
-            disp, index=disp.index(opts[default_key]),
-            key=f"manual_{feature}"
-        )
+        sel = st.selectbox(label, disp, index=disp.index(opts[default_key]),
+                           help=help_text, key=f"manual_{feature}")
         return {v:k for k,v in opts.items()}[sel]
 
     with st.form("manual_form"):
-        cols = st.columns(3, gap="medium")
-        idx = 0
-        for feature in model_expected_features:
-            with cols[idx % 3]:
-                if feature == 'Marital_status':
-                    input_data[feature] = cat_input(feature, MARITAL_STATUS_OPTIONS, 1)
-                elif feature == 'Application_mode':
-                    input_data[feature] = st.number_input("Application Mode", 1, 57, 1, 1, help="Kode 1–57", key=f"m_{feature}")
-                elif feature == 'Application_order':
-                    input_data[feature] = st.number_input("Application Order", 0, 9, 0, 1, key=f"m_{feature}")
-                elif feature == 'Course':
-                    input_data[feature] = st.number_input("Course", 33, 9991, 9119, 1, key=f"m_{feature}")
-                elif feature == 'Daytime/evening_attendance':
-                    input_data[feature] = cat_input(feature, DAYTIME_EVENING_OPTIONS, 1)
-                elif feature == 'Previous_qualification':
-                    input_data[feature] = st.number_input("Previous Qualification", 1, 43, 1, 1, key=f"m_{feature}")
-                elif 'Previous_qualification' in feature and 'grade' in feature.lower():
-                    input_data[feature] = st.number_input("Prev. Qualification Grade", 0.0, 200.0, 120.0, 0.1, key=f"m_{feature}")
-                elif feature == 'Nacionality':
-                    input_data[feature] = st.number_input("Nationality", 1, 109, 1, 1, key=f"m_{feature}")
-                elif "Mother's_qualification" in feature:
-                    input_data[feature] = st.number_input("Mother's Qualification", 1, 44, 1, 1, key=f"m_{feature}")
-                elif "Father's_qualification" in feature:
-                    input_data[feature] = st.number_input("Father's Qualification", 1, 44, 1, 1, key=f"m_{feature}")
-                elif "Mother's_occupation" in feature:
-                    input_data[feature] = st.number_input("Mother's Occupation", 0, 194, 99, 1, key=f"m_{feature}")
-                elif "Father's_occupation" in feature:
-                    input_data[feature] = st.number_input("Father's Occupation", 0, 195, 99, 1, key=f"m_{feature}")
-                elif feature == 'Admission_grade':
-                    input_data[feature] = st.number_input("Admission Grade", 0.0, 200.0, 120.0, 0.1, key=f"m_{feature}")
-                elif feature == 'Displaced':
-                    input_data[feature] = cat_input(feature, YES_NO_OPTIONS, 0)
-                elif feature == 'Educational_special_needs':
-                    input_data[feature] = cat_input(feature, YES_NO_OPTIONS, 0)
-                elif feature == 'Debtor':
-                    input_data[feature] = cat_input(feature, YES_NO_OPTIONS, 0)
-                elif feature == 'Tuition_fees_up_to_date':
-                    input_data[feature] = cat_input(feature, YES_NO_OPTIONS, 1)
-                elif feature == 'Gender':
-                    input_data[feature] = cat_input(feature, GENDER_OPTIONS, 1)
-                elif feature == 'Scholarship_holder':
-                    input_data[feature] = cat_input(feature, YES_NO_OPTIONS, 0)
-                elif feature == 'Age_at_enrollment':
-                    input_data[feature] = st.number_input("Age at Enrollment", 15, 80, 20, key=f"m_{feature}")
-                elif feature == 'International':
-                    input_data[feature] = cat_input(feature, YES_NO_OPTIONS, 0)
-                elif 'Curricular_units_1st_sem' in feature:
-                    lbl = feature.replace('Curricular_units_1st_sem_','').replace('_',' ').title()
-                    input_data[feature] = st.number_input(f"1st Sem {lbl}", 0, 30, 5, 1, key=f"m_{feature}")
-                elif 'Curricular_units_2nd_sem_grade' in feature:
-                    input_data[feature] = st.number_input("2nd Sem Grade", 0.0, 200.0, 120.0, 0.1, key=f"m_{feature}")
-                else:
-                    input_data[feature] = st.number_input(feature.replace('_',' ').title(), value=0.0, key=f"m_{feature}")
-            idx += 1
 
+        # ── SEKSI 1: Data Pribadi ──────────────────────────────────────────
+        st.markdown('<div class="form-section">👤 Data Pribadi Siswa</div>', unsafe_allow_html=True)
+        c1, c2, c3 = st.columns(3, gap="medium")
+        with c1:
+            input_data['Marital_status'] = cat_input(
+                "Status Pernikahan", 'Marital_status', MARITAL_STATUS_OPTIONS, 1,
+                "Status pernikahan siswa saat mendaftar")
+        with c2:
+            input_data['Gender'] = cat_input(
+                "Jenis Kelamin", 'Gender', GENDER_OPTIONS, 1, "")
+        with c3:
+            input_data['Age_at_enrollment'] = st.number_input(
+                "Usia saat Mendaftar", min_value=15, max_value=80, value=20,
+                help="Usia siswa dalam tahun saat pertama kali mendaftar",
+                key="m_Age_at_enrollment")
+        c4, c5, c6 = st.columns(3, gap="medium")
+        with c4:
+            input_data['Nacionality'] = st.number_input(
+                "Kewarganegaraan (Kode)", min_value=1, max_value=109, value=1, step=1,
+                help="Kode negara: 1=Portugal, 2=Jerman, dst. Lihat dokumentasi untuk daftar lengkap.",
+                key="m_Nacionality")
+        with c5:
+            input_data['International'] = cat_input(
+                "Mahasiswa Internasional?", 'International', YES_NO_OPTIONS, 0,
+                "Apakah siswa berasal dari luar negeri?")
+        with c6:
+            input_data['Displaced'] = cat_input(
+                "Pindahan (Displaced)?", 'Displaced', YES_NO_OPTIONS, 0,
+                "Apakah siswa merupakan siswa pindahan dari daerah lain?")
+
+        # ── SEKSI 2: Latar Belakang Pendidikan ───────────────────────────
+        st.markdown('<div class="form-section">🎒 Latar Belakang Pendidikan</div>', unsafe_allow_html=True)
+        c1, c2, c3 = st.columns(3, gap="medium")
+        with c1:
+            input_data['Previous_qualification'] = st.number_input(
+                "Kualifikasi Sebelumnya (Kode)", min_value=1, max_value=43, value=1, step=1,
+                help="Jenjang pendidikan sebelumnya: 1=SMA, 2=Sarjana, 3=Magister, dst.",
+                key="m_Previous_qualification")
+        with c2:
+            pq_key = next((f for f in model_expected_features if 'Previous_qualification' in f and 'grade' in f.lower()), None)
+            if pq_key:
+                input_data[pq_key] = st.number_input(
+                    "Nilai Kualifikasi Sebelumnya", min_value=0.0, max_value=200.0, value=120.0, step=0.1,
+                    help="Nilai rata-rata pada jenjang pendidikan sebelumnya (skala 0–200)",
+                    key=f"m_{pq_key}")
+        with c3:
+            input_data['Admission_grade'] = st.number_input(
+                "Nilai Masuk (Admission Grade)", min_value=0.0, max_value=200.0, value=120.0, step=0.1,
+                help="Nilai yang diperoleh saat seleksi masuk perguruan tinggi (skala 0–200)",
+                key="m_Admission_grade")
+        c4, c5 = st.columns([1,2], gap="medium")
+        with c4:
+            input_data['Educational_special_needs'] = cat_input(
+                "Kebutuhan Pendidikan Khusus?", 'Educational_special_needs', YES_NO_OPTIONS, 0,
+                "Apakah siswa memiliki kebutuhan pendidikan khusus (difabel, dsb.)?")
+        with c5:
+            input_data['Mother\'s_qualification'] = st.number_input(
+                "Pendidikan Terakhir Ibu (Kode)", min_value=1, max_value=44, value=1, step=1,
+                help="Kode tingkat pendidikan ibu: 1=SD, 2=SMP, 3=SMA, 4=Sarjana, dst.",
+                key="m_Mother_qual")
+            input_data['Father\'s_qualification'] = st.number_input(
+                "Pendidikan Terakhir Ayah (Kode)", min_value=1, max_value=44, value=1, step=1,
+                help="Kode tingkat pendidikan ayah: 1=SD, 2=SMP, 3=SMA, 4=Sarjana, dst.",
+                key="m_Father_qual")
+
+        # ── SEKSI 3: Pekerjaan Orang Tua ──────────────────────────────────
+        st.markdown('<div class="form-section">💼 Pekerjaan Orang Tua</div>', unsafe_allow_html=True)
+        c1, c2 = st.columns(2, gap="medium")
+        with c1:
+            input_data['Mother\'s_occupation'] = st.number_input(
+                "Pekerjaan Ibu (Kode)", min_value=0, max_value=194, value=99, step=1,
+                help="Kode pekerjaan ibu. 99 = tidak diketahui/tidak bekerja. Lihat dokumentasi untuk kode lainnya.",
+                key="m_Mother_occ")
+        with c2:
+            input_data['Father\'s_occupation'] = st.number_input(
+                "Pekerjaan Ayah (Kode)", min_value=0, max_value=195, value=99, step=1,
+                help="Kode pekerjaan ayah. 99 = tidak diketahui/tidak bekerja. Lihat dokumentasi untuk kode lainnya.",
+                key="m_Father_occ")
+
+        # ── SEKSI 4: Data Pendaftaran & Keuangan ──────────────────────────
+        st.markdown('<div class="form-section">📋 Pendaftaran & Keuangan</div>', unsafe_allow_html=True)
+        c1, c2, c3 = st.columns(3, gap="medium")
+        with c1:
+            input_data['Course'] = st.number_input(
+                "Program Studi (Kode)", min_value=33, max_value=9991, value=9119, step=1,
+                help="Kode program studi yang diambil. Contoh: 9119=Agronomi, 9254=Desain Komunikasi, dst.",
+                key="m_Course")
+        with c2:
+            input_data['Application_mode'] = st.number_input(
+                "Jalur Pendaftaran (Kode)", min_value=1, max_value=57, value=1, step=1,
+                help="Jalur penerimaan mahasiswa: 1=Umum (1st fase), 5=Khusus (Azores), 7=Pemegang Gelar Lain, dst.",
+                key="m_Application_mode")
+        with c3:
+            input_data['Application_order'] = st.number_input(
+                "Urutan Pilihan Prodi", min_value=0, max_value=9, value=0, step=1,
+                help="Urutan pilihan program studi ini saat mendaftar (0=pilihan pertama, 9=pilihan kesembilan)",
+                key="m_Application_order")
+        c4, c5, c6 = st.columns(3, gap="medium")
+        with c4:
+            input_data['Daytime/evening_attendance'] = cat_input(
+                "Waktu Kuliah", 'Daytime/evening_attendance', DAYTIME_EVENING_OPTIONS, 1,
+                "Apakah siswa mengikuti kuliah pagi atau malam hari?")
+        with c5:
+            input_data['Tuition_fees_up_to_date'] = cat_input(
+                "SPP Lunas?", 'Tuition_fees_up_to_date', YES_NO_OPTIONS, 1,
+                "Apakah pembayaran SPP siswa saat ini sudah lunas / up-to-date?")
+        with c6:
+            input_data['Debtor'] = cat_input(
+                "Memiliki Tunggakan?", 'Debtor', YES_NO_OPTIONS, 0,
+                "Apakah siswa memiliki tunggakan pembayaran kepada institusi?")
+        c7, c8 = st.columns(2, gap="medium")
+        with c7:
+            input_data['Scholarship_holder'] = cat_input(
+                "Penerima Beasiswa?", 'Scholarship_holder', YES_NO_OPTIONS, 0,
+                "Apakah siswa saat ini menerima beasiswa?")
+
+        # ── SEKSI 5: Akademik Semester 1 ─────────────────────────────────
+        st.markdown('<div class="form-section">📚 Akademik — Semester 1</div>', unsafe_allow_html=True)
+        c1, c2, c3, c4, c5 = st.columns(5, gap="medium")
+        sem1_fields = [
+            ('Curricular_units_1st_sem_credited',    "SKS Diakui",     0, 30, 0,   "Jumlah SKS yang diakui/dibebaskan dari jenjang sebelumnya"),
+            ('Curricular_units_1st_sem_enrolled',    "Mata Kuliah Diambil", 0, 30, 6, "Jumlah mata kuliah yang diambil semester 1"),
+            ('Curricular_units_1st_sem_evaluations', "Jumlah Evaluasi",0, 30, 6,   "Jumlah evaluasi/ujian yang diikuti semester 1"),
+            ('Curricular_units_1st_sem_approved',    "Mata Kuliah Lulus",0,30, 5,  "Jumlah mata kuliah yang berhasil lulus semester 1"),
+        ]
+        for col_widget, (feat, lbl, mn, mx, dv, hlp) in zip([c1,c2,c3,c4], sem1_fields):
+            with col_widget:
+                input_data[feat] = st.number_input(lbl, min_value=mn, max_value=mx, value=dv, step=1, help=hlp, key=f"m_{feat}")
+        with c5:
+            g1_key = next((f for f in model_expected_features if '1st_sem_grade' in f), None)
+            if g1_key:
+                input_data[g1_key] = st.number_input(
+                    "Nilai Rata-rata", min_value=0.0, max_value=20.0, value=12.0, step=0.1,
+                    help="Nilai rata-rata semester 1 (skala 0–20)", key=f"m_{g1_key}")
+
+        # ── SEKSI 6: Akademik Semester 2 ─────────────────────────────────
+        st.markdown('<div class="form-section">📖 Akademik — Semester 2</div>', unsafe_allow_html=True)
+        c1, c2 = st.columns(2, gap="medium")
+        with c1:
+            g2_key = next((f for f in model_expected_features if '2nd_sem_grade' in f), None)
+            if g2_key:
+                input_data[g2_key] = st.number_input(
+                    "Nilai Rata-rata Semester 2", min_value=0.0, max_value=20.0, value=12.0, step=0.1,
+                    help="Nilai rata-rata semester 2 (skala 0–20)", key=f"m_{g2_key}")
+
+        # ── Fitur lain yang belum tercakup ────────────────────────────────
+        covered = {
+            'Marital_status','Gender','Age_at_enrollment','Nacionality','International','Displaced',
+            'Previous_qualification','Admission_grade','Educational_special_needs',
+            "Mother's_qualification","Father's_qualification","Mother's_occupation","Father's_occupation",
+            'Course','Application_mode','Application_order','Daytime/evening_attendance',
+            'Tuition_fees_up_to_date','Debtor','Scholarship_holder',
+            'Curricular_units_1st_sem_credited','Curricular_units_1st_sem_enrolled',
+            'Curricular_units_1st_sem_evaluations','Curricular_units_1st_sem_approved',
+        }
+        if pq_key: covered.add(pq_key)
+        if g1_key: covered.add(g1_key)
+        if g2_key: covered.add(g2_key)
+
+        remaining = [f for f in model_expected_features if f not in covered]
+        if remaining:
+            st.markdown('<div class="form-section">⚙️ Fitur Tambahan</div>', unsafe_allow_html=True)
+            cols_r = st.columns(3, gap="medium")
+            for i, feat in enumerate(remaining):
+                with cols_r[i % 3]:
+                    input_data[feat] = st.number_input(
+                        feat.replace('_',' ').title(), value=0.0, key=f"m_{feat}")
+
+        st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
         submitted = st.form_submit_button("🔮  Dapatkan Prediksi", use_container_width=True)
 
     if submitted:
