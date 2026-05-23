@@ -63,9 +63,7 @@ Berikut link prediction dari aplikasi ini:
 
 🧭 Cara Menjalankan Prototype
 1. Akses Aplikasi
-Buka aplikasi melalui link:
-📍 https://hwnzgahtjf9hetn29ennzf.streamlit.app/
-atau bisa run saja secara lokal dengan: streamlit run prediksi.py
+Buka aplikasi melalui link yang tercantum sebelumnya (Streamlit Prediction) atau bisa run saja secara lokal dengan: streamlit run prediction.py
 
 2. Pilih Sumber Data
 Di sidebar sebelah kiri:
