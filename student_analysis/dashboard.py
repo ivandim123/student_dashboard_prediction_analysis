@@ -375,9 +375,9 @@ def pie_chart(df):
     ))
     fig.update_layout(**PLOTLY_LAYOUT, height=340,
                       showlegend=True, title='Status Distribution',
-                      annotations=[dict(text=f"<b>{len(df):,}</b><br><span style='font-size:10px'>students</span>",
-                                        x=0.5, y=0.5, font_size=18, showarrow=False,
-                                        font_color='#e8eaf0')])
+                      annotations=[dict(text=f"<b>{len(df):,}</b><br>students",
+                                        x=0.5, y=0.5, showarrow=False,
+                                        font=dict(size=18, color='#e8eaf0'))])
     return fig
 
 
@@ -432,13 +432,13 @@ with st.sidebar:
             </div>""", unsafe_allow_html=True)
 
         st.markdown("---")
-        st.markdown("### Columns")
-        cols_html = "".join([
-            f'<span style="font-family:Space Mono;font-size:0.65rem;background:#1a1e2a;'
-            f'color:#6b7280;padding:2px 7px;border-radius:4px;margin:2px;display:inline-block;">'
-            f'{c}</span>' for c in df.columns
-        ])
-        st.markdown(cols_html, unsafe_allow_html=True)
+        with st.expander(f"📋 {df.shape[1]} Columns", expanded=False):
+            cols_html = "".join([
+                f'<div style="font-family:Space Mono;font-size:0.68rem;color:#6b7280;'
+                f'padding:4px 8px;border-bottom:1px solid #1e2330;">{i+1}. {c}</div>'
+                for i, c in enumerate(df.columns)
+            ])
+            st.markdown(cols_html, unsafe_allow_html=True)
 
 # ─── MAIN CONTENT ────────────────────────────────────────────────────────────────
 if df is None or 'Target' not in df.columns:
@@ -637,7 +637,31 @@ for num, title, desc in recs:
       <span style="color:#6b7280;font-size:0.83rem;">{desc}</span></div>
     </div>""", unsafe_allow_html=True)
 
-# ── Data Preview ───────────────────────────────────────────────────────────────
-st.markdown('<div class="section-title">Raw Data</div>', unsafe_allow_html=True)
-if st.checkbox("Show data preview (first 100 rows)", value=False):
+# ── Dataset Explorer ──────────────────────────────────────────────────────────
+st.markdown('<div class="section-title">Dataset Explorer</div>', unsafe_allow_html=True)
+
+col_types = df.dtypes
+col_nulls = df.isnull().sum()
+
+col_grid_html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:1.5rem;">'
+for col in df.columns:
+    dtype = str(col_types[col])
+    nulls = col_nulls[col]
+    border = "border-left:3px solid #5b6af7;" if col == 'Target' else "border-left:3px solid #252a38;"
+    null_badge = f'<span style="font-size:0.62rem;color:#f7695b;">{nulls} null</span>' if nulls > 0 else ""
+    col_grid_html += f"""
+    <div style="background:#13161e;{border}border-radius:8px;padding:10px 12px;">
+      <div style="font-family:\'Space Mono\',monospace;font-size:0.68rem;color:#e8eaf0;
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+                  margin-bottom:4px;" title="{col}">{col}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.65rem;color:#5b6af7;background:rgba(91,106,247,0.1);
+                     padding:1px 6px;border-radius:3px;">{dtype}</span>
+        {null_badge}
+      </div>
+    </div>"""
+col_grid_html += '</div>'
+st.markdown(col_grid_html, unsafe_allow_html=True)
+
+if st.checkbox("Show raw data (first 100 rows)", value=False):
     st.dataframe(df.head(100), use_container_width=True)
