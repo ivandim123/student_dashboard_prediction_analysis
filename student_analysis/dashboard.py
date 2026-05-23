@@ -3,665 +3,338 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 
-# ─── PAGE CONFIG ────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Student Dropout Analysis",
+    page_title="Analisis Dropout Siswa",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ─── GLOBAL CSS ─────────────────────────────────────────────────────────────────
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Space+Mono:wght@400;700&display=swap');
+COLOR_MAP = {"Dropout": "#f7695b", "Enrolled": "#46d9ac", "Graduate": "#5b6af7"}
 
-/* ── Root Variables ── */
-:root {
-    --bg:          #0d0f14;
-    --surface:     #13161e;
-    --surface2:    #1a1e2a;
-    --border:      #252a38;
-    --accent:      #5b6af7;
-    --accent2:     #f7695b;
-    --accent3:     #46d9ac;
-    --text:        #e8eaf0;
-    --muted:       #6b7280;
-    --dropout:     #f7695b;
-    --enrolled:    #46d9ac;
-    --graduate:    #5b6af7;
-}
-
-/* ── Base ── */
-html, body, [class*="css"] {
-    font-family: 'DM Sans', sans-serif;
-    background-color: var(--bg) !important;
-    color: var(--text) !important;
-}
-.stApp { background-color: var(--bg) !important; }
-
-/* ── Sidebar ── */
-[data-testid="stSidebar"] {
-    background-color: var(--surface) !important;
-    border-right: 1px solid var(--border) !important;
-}
-[data-testid="stSidebar"] * { color: var(--text) !important; }
-[data-testid="stSidebar"] .stButton > button {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 8px;
-    width: 100%;
-}
-[data-testid="stSidebar"] .stButton > button:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-}
-
-/* ── Main Header ── */
-.main-header {
-    padding: 2.5rem 0 1.5rem 0;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 2rem;
-}
-.main-title {
-    font-size: 2.4rem;
-    font-weight: 600;
-    letter-spacing: -0.03em;
-    color: var(--text);
-    margin: 0;
-    line-height: 1.1;
-}
-.main-subtitle {
-    font-size: 0.95rem;
-    color: var(--muted);
-    margin-top: 0.5rem;
-    font-weight: 300;
-}
-.mono-tag {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.72rem;
-    color: var(--accent);
-    background: rgba(91,106,247,0.12);
-    padding: 3px 10px;
-    border-radius: 4px;
-    letter-spacing: 0.08em;
-    display: inline-block;
-    margin-bottom: 0.8rem;
-}
-
-/* ── Section Headers ── */
-.section-title {
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 2.5rem 0 1.2rem 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.section-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-}
-
-/* ── Metric Cards ── */
-.metric-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-.metric-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.4rem 1.5rem;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.2s;
-}
-.metric-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    border-radius: 12px 12px 0 0;
-}
-.metric-card.blue::before  { background: var(--graduate); }
-.metric-card.red::before   { background: var(--dropout); }
-.metric-card.green::before { background: var(--enrolled); }
-.metric-card.purple::before { background: #c084fc; }
-.metric-card.gold::before  { background: #fbbf24; }
-.metric-card:hover { border-color: rgba(91,106,247,0.4); }
-.metric-label {
-    font-size: 0.72rem;
-    font-weight: 500;
-    color: var(--muted);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    margin-bottom: 0.6rem;
-}
-.metric-value {
-    font-size: 2rem;
-    font-weight: 600;
-    color: var(--text);
-    line-height: 1;
-    letter-spacing: -0.02em;
-}
-.metric-badge {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.7rem;
-    margin-top: 0.5rem;
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-}
-.metric-badge.danger { background: rgba(247,105,91,0.15); color: var(--dropout); }
-.metric-badge.safe   { background: rgba(70,217,172,0.15); color: var(--enrolled); }
-.metric-badge.info   { background: rgba(91,106,247,0.15); color: var(--graduate); }
-
-/* ── Chart Cards ── */
-.chart-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-}
-.chart-title {
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 1rem;
-}
-
-/* ── Insight Cards ── */
-.insight-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    border-radius: 10px;
-    padding: 1rem 1.4rem;
-    margin-bottom: 0.75rem;
-    font-size: 0.9rem;
-    line-height: 1.6;
-}
-.insight-card.warn { border-left-color: var(--accent2); }
-.insight-card.good { border-left-color: var(--accent3); }
-
-/* ── Recommendation List ── */
-.rec-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 1rem 1.2rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    margin-bottom: 0.6rem;
-    font-size: 0.88rem;
-    line-height: 1.5;
-}
-.rec-num {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--accent);
-    background: rgba(91,106,247,0.12);
-    padding: 3px 8px;
-    border-radius: 4px;
-    flex-shrink: 0;
-    margin-top: 1px;
-}
-
-/* ── Legend dots ── */
-.legend {
-    display: flex;
-    gap: 1.2rem;
-    font-size: 0.78rem;
-    color: var(--muted);
-    margin-bottom: 0.5rem;
-    align-items: center;
-}
-.dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 4px;
-}
-.dot.dropout  { background: var(--dropout); }
-.dot.enrolled { background: var(--enrolled); }
-.dot.graduate { background: var(--graduate); }
-
-/* ── Override Streamlit widgets to dark ── */
-[data-testid="stMetric"] {
-    background: var(--surface) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 12px !important;
-    padding: 1.2rem 1.4rem !important;
-}
-.stPlotlyChart { border-radius: 12px; overflow: hidden; }
-div[data-testid="stCheckbox"] label { color: var(--muted) !important; font-size: 0.85rem; }
-
-/* ── Dataframe ── */
-[data-testid="stDataFrame"] {
-    border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
-}
-
-/* ── Upload widget ── */
-[data-testid="stFileUploader"] {
-    background: var(--surface2) !important;
-    border: 1px dashed var(--border) !important;
-    border-radius: 10px !important;
-}
-
-/* ── Divider ── */
-hr { border-color: var(--border) !important; }
-
-/* ── Success/warning/info text in sidebar ── */
-.stSuccess, .stWarning, .stInfo, .stError {
-    border-radius: 8px !important;
-    font-size: 0.8rem !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ─── PLOTLY THEME ────────────────────────────────────────────────────────────────
-PLOTLY_LAYOUT = dict(
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="DM Sans, sans-serif", color="#9ca3af", size=11),
-    title_font=dict(family="DM Sans, sans-serif", color="#e8eaf0", size=13),
-    title_x=0,
-    legend=dict(
-        bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#9ca3af", size=10),
-        orientation="h",
-        yanchor="bottom", y=1.02,
-        xanchor="right", x=1
-    ),
-    margin=dict(l=0, r=0, t=36, b=0),
-    xaxis=dict(gridcolor="#1e2330", linecolor="#252a38", tickfont=dict(color="#6b7280")),
-    yaxis=dict(gridcolor="#1e2330", linecolor="#252a38", tickfont=dict(color="#6b7280")),
-    height=360,
-)
-
-COLOR_MAP = {
-    "Dropout":  "#f7695b",
-    "Enrolled": "#46d9ac",
-    "Graduate": "#5b6af7",
-}
-
-# ─── DATA LOADING ────────────────────────────────────────────────────────────────
+# ── Data Loading ───────────────────────────────────────────────────────────────
 @st.cache_data
-def load_csv_from_path():
+def load_csv():
     script_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
-    paths = ["data.csv", os.path.join(script_dir, "data.csv"), "./data.csv",
-             "dataset/data.csv", "data/data.csv"]
+    candidates = ["data.csv", os.path.join(script_dir, "data.csv")]
     try:
         for f in os.listdir('.'):
-            if f.endswith('.csv'): paths.insert(0, f)
-    except: pass
-    for p in paths:
+            if f.endswith('.csv'):
+                candidates.insert(0, f)
+    except:
+        pass
+    for p in candidates:
         try:
             if os.path.exists(p):
                 return pd.read_csv(p), p
-        except: continue
+        except:
+            continue
     return None, None
 
 
 @st.cache_data
-def create_sample_data():
+def sample_data():
     np.random.seed(42)
     n = 1000
     ages = np.random.normal(20, 2, n).clip(17, 35).astype(int)
     genders = np.random.choice(['Male', 'Female'], n, p=[0.45, 0.55])
-    scholarship_prob = np.where(ages < 22, 0.4, 0.2)
-    scholarships = np.random.binomial(1, scholarship_prob, n)
-    base_grade = 12 + scholarships * 2 + np.random.normal(0, 2, n)
-    grade_1st = base_grade.clip(0, 20)
-    grade_2nd = (base_grade + np.random.normal(0, 1, n)).clip(0, 20)
-    dropout_prob = (0.1 + 0.3 * (grade_1st < 10) + 0.2 * (scholarships == 0) + 0.1 * (ages > 25)).clip(0, 1)
-    statuses = []
-    for p in dropout_prob:
-        r = np.random.random()
-        statuses.append('Dropout' if r < p else 'Enrolled' if r < p + 0.4 else 'Graduate')
+    scholarships = np.random.binomial(1, np.where(ages < 22, 0.4, 0.2), n)
+    base = 12 + scholarships * 2 + np.random.normal(0, 2, n)
+    grade1 = base.clip(0, 20)
+    grade2 = (base + np.random.normal(0, 1, n)).clip(0, 20)
+    drop_p = (0.1 + 0.3*(grade1 < 10) + 0.2*(scholarships == 0) + 0.1*(ages > 25)).clip(0, 1)
+    statuses = ['Dropout' if r < p else ('Enrolled' if r < p+0.4 else 'Graduate')
+                for r, p in zip(np.random.random(n), drop_p)]
     return pd.DataFrame({
-        'Student_ID': range(1, n + 1),
         'Age_at_enrollment': ages, 'Gender': genders,
-        'Application_mode': np.random.choice([1,2,17,18,39,42,43], n),
-        'Fathers_qualification': np.random.choice([1,2,3,4,5,19,34,35], n),
-        'Mothers_qualification': np.random.choice([1,2,3,4,5,19,34,35], n),
-        'Tuition_fees_up_to_date': np.random.choice([0,1], n, p=[0.15,0.85]),
         'Scholarship_holder': scholarships,
-        'Curricular_units_1st_sem_grade': grade_1st,
-        'Curricular_units_2nd_sem_grade': grade_2nd,
-        'Daytime_evening_attendance': np.random.choice([0,1], n, p=[0.3,0.7]),
+        'Tuition_fees_up_to_date': np.random.choice([0, 1], n, p=[0.15, 0.85]),
+        'Curricular_units_1st_sem_grade': grade1,
+        'Daytime_evening_attendance': np.random.choice([0, 1], n, p=[0.3, 0.7]),
+        'Fathers_qualification': np.random.choice([1,2,3,4,5,19,34], n),
+        'Mothers_qualification': np.random.choice([1,2,3,4,5,19,34], n),
         'Target': statuses,
     })
 
-# ─── CHART HELPERS ───────────────────────────────────────────────────────────────
-def stacked_bar(df, group_col, title):
+
+def stacked_pct_bar(df, group_col, title, x_label=""):
     grp = df.groupby([group_col, 'Target']).size().unstack(fill_value=0)
-    pct = grp.div(grp.sum(axis=1), axis=0) * 100
-    fig = px.bar(pct.reset_index(), x=group_col,
-                 y=[c for c in ['Dropout','Enrolled','Graduate'] if c in pct.columns],
+    pct = (grp.div(grp.sum(axis=1), axis=0) * 100).reset_index()
+    cols = [c for c in ['Dropout', 'Enrolled', 'Graduate'] if c in pct.columns]
+    fig = px.bar(pct, x=group_col, y=cols, title=title,
                  color_discrete_map=COLOR_MAP, barmode='stack',
-                 labels={'value': 'Percentage (%)', group_col: ''},
-                 title=title)
-    fig.update_layout(**PLOTLY_LAYOUT)
+                 labels={'value': 'Persentase (%)', group_col: x_label})
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        font_color='#9ca3af', title_font_color='#e8eaf0',
+        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1,
+                    font_color='#9ca3af', bgcolor='rgba(0,0,0,0)'),
+        margin=dict(l=0, r=0, t=40, b=0), height=340,
+        xaxis=dict(gridcolor='#1e2330', linecolor='#252a38'),
+        yaxis=dict(gridcolor='#1e2330', linecolor='#252a38'),
+    )
     fig.update_traces(marker_line_width=0)
     return fig
 
 
-def pie_chart(df):
-    vc = df['Target'].value_counts()
-    fig = go.Figure(go.Pie(
-        labels=vc.index, values=vc.values,
-        marker_colors=[COLOR_MAP.get(l, '#999') for l in vc.index],
-        hole=0.55,
-        textinfo='percent',
-        textfont=dict(size=11, color='#e8eaf0'),
-        hovertemplate='<b>%{label}</b><br>%{value} students<br>%{percent}<extra></extra>',
-    ))
-    fig.update_layout(**PLOTLY_LAYOUT, height=340,
-                      showlegend=True, title='Status Distribution',
-                      annotations=[dict(text=f"<b>{len(df):,}</b><br>students",
-                                        x=0.5, y=0.5, showarrow=False,
-                                        font=dict(size=18, color='#e8eaf0'))])
+def donut_chart(df):
+    vc = df['Target'].value_counts().reset_index()
+    vc.columns = ['Status', 'Jumlah']
+    fig = px.pie(vc, values='Jumlah', names='Status', hole=0.55,
+                 color='Status', color_discrete_map=COLOR_MAP,
+                 title='Distribusi Status Siswa')
+    fig.update_traces(textinfo='percent+label', textfont_color='#e8eaf0')
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        font_color='#9ca3af', title_font_color='#e8eaf0',
+        legend=dict(orientation='h', yanchor='bottom', y=-0.15, xanchor='center', x=0.5,
+                    font_color='#9ca3af', bgcolor='rgba(0,0,0,0)'),
+        margin=dict(l=0, r=0, t=40, b=0), height=340,
+    )
     return fig
 
 
-def grade_chart(df, col):
-    df2 = df.copy()
-    df2['Grade_Band'] = pd.cut(df2[col], bins=[0, 10, 14, 17, 20],
-                                labels=['0–10 · Low', '10–14 · Avg', '14–17 · Good', '17–20 · Top'])
-    return stacked_bar(df2, 'Grade_Band', 'Academic Performance vs Status')
-
-# ─── SIDEBAR ─────────────────────────────────────────────────────────────────────
+# ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown('<div class="mono-tag">STUDENT ANALYTICS</div>', unsafe_allow_html=True)
-    st.markdown("### Data Source")
+    st.markdown("### 🎓 Student Analytics")
+    st.markdown("---")
 
-    df, file_path = load_csv_from_path()
+    df, path = load_csv()
     if df is not None:
-        st.success(f"Auto-loaded: `{os.path.basename(file_path)}`")
+        st.success(f"✅ File: `{os.path.basename(path)}`")
     else:
-        uploaded = st.file_uploader("Upload CSV", type="csv", label_visibility="collapsed")
+        uploaded = st.file_uploader("Upload CSV", type="csv")
         if uploaded:
             try:
                 df = pd.read_csv(uploaded)
-                st.success("File uploaded successfully")
+                st.success("✅ File berhasil diupload")
             except Exception as e:
-                st.error(f"Parse error: {e}")
+                st.error(f"Error: {e}")
         else:
-            st.info("No file found — showing sample data")
-            df = create_sample_data()
+            st.info("📊 Menggunakan data sampel")
+            df = sample_data()
 
-    # Normalize columns
+    # Normalize
     if df is not None:
         if 'Status' in df.columns:
             df = df.rename(columns={'Status': 'Target'})
         if 'Age' not in df.columns and 'Age_at_enrollment' in df.columns:
             df['Age'] = df['Age_at_enrollment']
 
+    if df is not None and 'Target' in df.columns:
         st.markdown("---")
-        st.markdown("### Dataset")
-        st.caption(f"**{df.shape[0]:,}** rows  ·  **{df.shape[1]}** columns")
+        st.markdown("**Ringkasan Dataset**")
+        st.caption(f"{df.shape[0]:,} baris · {df.shape[1]} kolom")
 
-        status_vc = df['Target'].value_counts()
-        for status, cnt in status_vc.items():
-            pct = cnt / len(df) * 100
-            color = {"Dropout": "#f7695b", "Enrolled": "#46d9ac", "Graduate": "#5b6af7"}.get(status, "#999")
-            st.markdown(f"""
-            <div style="display:flex;justify-content:space-between;align-items:center;
-                        padding:6px 10px;background:#1a1e2a;border-radius:6px;margin:4px 0;">
-              <span style="font-size:0.8rem;color:#9ca3af;">{status}</span>
-              <span style="font-family:'Space Mono',monospace;font-size:0.75rem;color:{color};">
-                {cnt:,} · {pct:.1f}%
-              </span>
-            </div>""", unsafe_allow_html=True)
+        for status, color in COLOR_MAP.items():
+            n = len(df[df['Target'] == status])
+            pct = n / len(df) * 100
+            st.markdown(
+                f'<div style="display:flex;justify-content:space-between;padding:5px 8px;'
+                f'background:#1a1e2a;border-radius:6px;margin:3px 0;border-left:3px solid {color};">'
+                f'<span style="font-size:0.8rem;color:#9ca3af;">{status}</span>'
+                f'<span style="font-size:0.8rem;color:{color};font-weight:600;">{n:,} ({pct:.1f}%)</span>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
 
         st.markdown("---")
-        with st.expander(f"📋 {df.shape[1]} Columns", expanded=False):
-            cols_html = "".join([
-                f'<div style="font-family:Space Mono;font-size:0.68rem;color:#6b7280;'
-                f'padding:4px 8px;border-bottom:1px solid #1e2330;">{i+1}. {c}</div>'
-                for i, c in enumerate(df.columns)
-            ])
-            st.markdown(cols_html, unsafe_allow_html=True)
+        with st.expander(f"📋 {df.shape[1]} Kolom"):
+            for i, col in enumerate(df.columns, 1):
+                st.caption(f"{i}. `{col}` — *{df[col].dtype}*")
 
-# ─── MAIN CONTENT ────────────────────────────────────────────────────────────────
+
+# ── Guard ──────────────────────────────────────────────────────────────────────
 if df is None or 'Target' not in df.columns:
-    st.error("Cannot load data. Please upload a valid CSV file with a `Target` or `Status` column.")
+    st.error("Tidak bisa memuat data. Pastikan file CSV memiliki kolom `Target` atau `Status`.")
     st.stop()
 
-# Header
-st.markdown("""
-<div class="main-header">
-  <div class="mono-tag">EDUCATIONAL DATA INTELLIGENCE</div>
-  <h1 class="main-title">Student Dropout Analysis</h1>
-  <p class="main-subtitle">Comprehensive analysis of dropout risk factors · Academic year overview</p>
-</div>
-""", unsafe_allow_html=True)
 
-# ── KPI Cards ──────────────────────────────────────────────────────────────────
-total = len(df)
+# ── Header ─────────────────────────────────────────────────────────────────────
+st.title("🎓 Dashboard Analisis Dropout Siswa")
+st.caption("Analisis komprehensif faktor-faktor yang mempengaruhi dropout siswa")
+st.divider()
+
+# ── KPI Metrics ────────────────────────────────────────────────────────────────
+total      = len(df)
 dropout_n  = len(df[df['Target'] == 'Dropout'])
 enrolled_n = len(df[df['Target'] == 'Enrolled'])
 grad_n     = len(df[df['Target'] == 'Graduate'])
 dr = dropout_n / total * 100
 rr = (total - dropout_n) / total * 100
 
-st.markdown(f"""
-<div class="metric-grid">
-  <div class="metric-card blue">
-    <div class="metric-label">Total Students</div>
-    <div class="metric-value">{total:,}</div>
-    <span class="metric-badge info">All records</span>
-  </div>
-  <div class="metric-card red">
-    <div class="metric-label">Dropout</div>
-    <div class="metric-value">{dropout_n:,}</div>
-    <span class="metric-badge danger">{dr:.1f}% rate</span>
-  </div>
-  <div class="metric-card green">
-    <div class="metric-label">Enrolled</div>
-    <div class="metric-value">{enrolled_n:,}</div>
-    <span class="metric-badge safe">Active</span>
-  </div>
-  <div class="metric-card purple">
-    <div class="metric-label">Graduate</div>
-    <div class="metric-value">{grad_n:,}</div>
-    <span class="metric-badge info">Completed</span>
-  </div>
-  <div class="metric-card gold">
-    <div class="metric-label">Retention Rate</div>
-    <div class="metric-value">{rr:.1f}<span style="font-size:1rem">%</span></div>
-    <span class="metric-badge safe">Non-dropout</span>
-  </div>
-</div>
-""", unsafe_allow_html=True)
+m1, m2, m3, m4, m5 = st.columns(5)
+m1.metric("👥 Total Siswa",    f"{total:,}")
+m2.metric("❌ Dropout",        f"{dropout_n:,}",  f"{dr:.1f}% dari total")
+m3.metric("📚 Enrolled",       f"{enrolled_n:,}")
+m4.metric("🎓 Graduate",       f"{grad_n:,}")
+m5.metric("📈 Retention Rate", f"{rr:.1f}%")
 
-# ── Section: Overview ──────────────────────────────────────────────────────────
-st.markdown('<div class="section-title">Overview</div>', unsafe_allow_html=True)
+st.divider()
 
-col1, col2 = st.columns([1, 1.6])
+# ── Overview ───────────────────────────────────────────────────────────────────
+st.subheader("📊 Overview")
+col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-    st.plotly_chart(pie_chart(df), use_container_width=True, config={'displayModeBar': False})
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.plotly_chart(donut_chart(df), use_container_width=True)
 
 with col2:
     if 'Age' in df.columns:
-        df2 = df.copy()
-        df2['Age_Group'] = pd.cut(df2['Age'], bins=[16,20,23,26,100],
-                                   labels=['17–20', '21–23', '24–26', '27+'])
-        fig = stacked_bar(df2, 'Age_Group', 'Dropout Rate by Age Group (%)')
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        d = df.copy()
+        d['Kelompok Usia'] = pd.cut(d['Age'], bins=[16,20,23,26,100],
+                                    labels=['17–20', '21–23', '24–26', '27+'])
+        st.plotly_chart(
+            stacked_pct_bar(d, 'Kelompok Usia', 'Status Siswa per Kelompok Usia (%)'),
+            use_container_width=True
+        )
     else:
-        st.info("Age data not available")
+        st.info("Data usia tidak tersedia")
 
-# ── Section: Demographics ──────────────────────────────────────────────────────
-st.markdown('<div class="section-title">Demographics & Financial</div>', unsafe_allow_html=True)
+st.divider()
 
+# ── Demografi & Keuangan ───────────────────────────────────────────────────────
+st.subheader("👥 Demografi & Keuangan")
 c1, c2, c3 = st.columns(3)
 
 with c1:
     if 'Gender' in df.columns:
-        fig = stacked_bar(df, 'Gender', 'Gender vs Status (%)')
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.plotly_chart(
+            stacked_pct_bar(df, 'Gender', 'Status per Gender (%)'),
+            use_container_width=True
+        )
 
 with c2:
     if 'Scholarship_holder' in df.columns:
-        df3 = df.copy()
-        df3['Beasiswa'] = df3['Scholarship_holder'].map({1: 'Scholarship', 0: 'No Scholarship'})
-        fig = stacked_bar(df3, 'Beasiswa', 'Scholarship Impact (%)')
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        d = df.copy()
+        d['Beasiswa'] = d['Scholarship_holder'].map({1: 'Ada Beasiswa', 0: 'Tidak Ada'})
+        st.plotly_chart(
+            stacked_pct_bar(d, 'Beasiswa', 'Pengaruh Beasiswa (%)'),
+            use_container_width=True
+        )
 
 with c3:
     if 'Tuition_fees_up_to_date' in df.columns:
-        df4 = df.copy()
-        df4['SPP'] = df4['Tuition_fees_up_to_date'].map({1: 'Up-to-date', 0: 'Overdue'})
-        fig = stacked_bar(df4, 'SPP', 'Tuition Status vs Dropout (%)')
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        d = df.copy()
+        d['Status SPP'] = d['Tuition_fees_up_to_date'].map({1: 'Lunas', 0: 'Menunggak'})
+        st.plotly_chart(
+            stacked_pct_bar(d, 'Status SPP', 'Status Pembayaran SPP (%)'),
+            use_container_width=True
+        )
 
-# ── Section: Academic ─────────────────────────────────────────────────────────
-st.markdown('<div class="section-title">Academic Performance</div>', unsafe_allow_html=True)
+st.divider()
 
-grade_col = next((c for c in df.columns if 'grade' in c.lower() or 'Grade' in c), None)
+# ── Akademik ───────────────────────────────────────────────────────────────────
+st.subheader("📚 Performa Akademik")
+grade_col = next((c for c in df.columns if 'grade' in c.lower()), None)
 attend_col = 'Daytime_evening_attendance' if 'Daytime_evening_attendance' in df.columns else None
 
-gc1, gc2 = st.columns(2)
-with gc1:
+g1, g2 = st.columns(2)
+with g1:
     if grade_col:
-        fig = grade_chart(df, grade_col)
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        d = df.copy()
+        d['Kategori Nilai'] = pd.cut(d[grade_col], bins=[-0.01, 10, 14, 17, 20],
+                                     labels=['0–10 Rendah', '10–14 Sedang', '14–17 Baik', '17–20 Sangat Baik'])
+        st.plotly_chart(
+            stacked_pct_bar(d, 'Kategori Nilai', 'Prestasi Akademik vs Status (%)'),
+            use_container_width=True
+        )
     else:
-        st.info("Grade data not available")
+        st.info("Data nilai tidak tersedia")
 
-with gc2:
+with g2:
     if attend_col:
-        df5 = df.copy()
-        df5['Session'] = df5[attend_col].map({1: 'Daytime', 0: 'Evening'})
-        fig = stacked_bar(df5, 'Session', 'Attendance Session vs Status (%)')
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        st.markdown('</div>', unsafe_allow_html=True)
+        d = df.copy()
+        d['Sesi'] = d[attend_col].map({1: 'Pagi', 0: 'Malam'})
+        st.plotly_chart(
+            stacked_pct_bar(d, 'Sesi', 'Waktu Kehadiran vs Status (%)'),
+            use_container_width=True
+        )
     else:
-        st.info("Attendance data not available")
+        st.info("Data kehadiran tidak tersedia")
 
-# ── Section: Family Background ────────────────────────────────────────────────
+st.divider()
+
+# ── Latar Belakang Keluarga ────────────────────────────────────────────────────
 parent_col = next((c for c in df.columns if 'qualification' in c.lower()), None)
 if parent_col:
-    st.markdown('<div class="section-title">Family Background</div>', unsafe_allow_html=True)
-    qual_map = {1:'Elementary',2:'Secondary',3:'High School',4:'Diploma',5:'Bachelor',
-                19:'Master',34:'Doctorate',35:'Other'}
-    df6 = df.copy()
-    df6['Parent_Edu'] = df6[parent_col].map(qual_map).fillna('Other')
-    fig = stacked_bar(df6, 'Parent_Edu', "Parent's Education Level vs Student Status (%)")
-    st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.subheader("👨‍👩‍👧 Pendidikan Orang Tua")
+    qual_map = {1:'SD', 2:'SMP', 3:'SMA', 4:'Diploma', 5:'S1', 19:'S2', 34:'S3', 35:'Lainnya'}
+    d = df.copy()
+    d['Pendidikan OT'] = d[parent_col].map(qual_map).fillna('Lainnya')
+    st.plotly_chart(
+        stacked_pct_bar(d, 'Pendidikan OT', 'Tingkat Pendidikan Orang Tua vs Status Siswa (%)'),
+        use_container_width=True
+    )
+    st.divider()
 
-# ── Section: Insights ─────────────────────────────────────────────────────────
-st.markdown('<div class="section-title">Key Insights</div>', unsafe_allow_html=True)
+# ── Key Insights ───────────────────────────────────────────────────────────────
+st.subheader("💡 Key Insights")
 
-insights = []
-insights.append(("info",
-    f"<b>{dr:.1f}%</b> of students drop out — "
-    f"that's <b>{dropout_n:,}</b> students who need intervention strategies."))
+insights = [(
+    "info",
+    f"**Tingkat Dropout: {dr:.1f}%** — {dropout_n:,} siswa perlu strategi intervensi segera."
+)]
 
 if 'Age' in df.columns:
     d_age = df[df['Target']=='Dropout']['Age'].mean()
     g_age = df[df['Target']=='Graduate']['Age'].mean()
-    direction = "older" if d_age > g_age else "younger"
-    insights.append(("warn",
-        f"Dropout students tend to be <b>{direction}</b> on average: "
-        f"<b>{d_age:.1f} yrs</b> (dropout) vs <b>{g_age:.1f} yrs</b> (graduate)."))
+    arah = "lebih tua" if d_age > g_age else "lebih muda"
+    insights.append(("warning",
+        f"Siswa dropout cenderung **{arah}**: rata-rata **{d_age:.1f} tahun** "
+        f"vs graduate **{g_age:.1f} tahun**."))
 
 if 'Scholarship_holder' in df.columns:
-    r_s = len(df[(df['Target']=='Dropout')&(df['Scholarship_holder']==1)]) / max(1, len(df[df['Scholarship_holder']==1])) * 100
-    r_n = len(df[(df['Target']=='Dropout')&(df['Scholarship_holder']==0)]) / max(1, len(df[df['Scholarship_holder']==0])) * 100
-    cls = "good" if r_s < r_n else "warn"
-    insights.append((cls,
-        f"Scholarship holders drop out at <b>{r_s:.1f}%</b> vs <b>{r_n:.1f}%</b> for non-holders — "
-        f"{'scholarship programs are effective ✓' if r_s < r_n else 'scholarship programs need re-evaluation ⚠'}."))
+    r_s = len(df[(df['Target']=='Dropout') & (df['Scholarship_holder']==1)]) / max(1, len(df[df['Scholarship_holder']==1])) * 100
+    r_n = len(df[(df['Target']=='Dropout') & (df['Scholarship_holder']==0)]) / max(1, len(df[df['Scholarship_holder']==0])) * 100
+    if r_s < r_n:
+        insights.append(("success",
+            f"**Beasiswa efektif**: dropout penerima beasiswa **{r_s:.1f}%** vs non-penerima **{r_n:.1f}%**."))
+    else:
+        insights.append(("warning",
+            f"**Beasiswa perlu dievaluasi**: dropout penerima beasiswa **{r_s:.1f}%** vs non-penerima **{r_n:.1f}%**."))
 
 if grade_col:
     avg_d = df[df['Target']=='Dropout'][grade_col].mean()
     avg_g = df[df['Target']=='Graduate'][grade_col].mean()
-    insights.append(("good",
-        f"Academic performance is a strong predictor: graduate avg grade <b>{avg_g:.1f}</b> "
-        f"vs dropout avg <b>{avg_d:.1f}</b> — a <b>{avg_g - avg_d:.1f} point</b> gap."))
+    insights.append(("success",
+        f"**Nilai akademik berpengaruh besar**: rata-rata graduate **{avg_g:.1f}** vs dropout **{avg_d:.1f}** "
+        f"(selisih {avg_g - avg_d:.1f} poin)."))
 
-for cls, text in insights:
-    st.markdown(f'<div class="insight-card {cls}">{text}</div>', unsafe_allow_html=True)
+for kind, text in insights:
+    if kind == "info":
+        st.info(text)
+    elif kind == "warning":
+        st.warning(text)
+    else:
+        st.success(text)
 
-# ── Section: Recommendations ──────────────────────────────────────────────────
-st.markdown('<div class="section-title">Action Recommendations</div>', unsafe_allow_html=True)
+st.divider()
+
+# ── Rekomendasi ────────────────────────────────────────────────────────────────
+st.subheader("🎯 Rekomendasi Aksi")
 
 recs = [
-    ("01", "🎓 Academic Support", "Prioritize early intervention for students with low first-semester grades. Assign tutors before the second semester begins."),
-    ("02", "💰 Financial Aid", "Expand scholarship programs targeting high-risk demographic groups — particularly older, non-scholarship students."),
-    ("03", "👥 Peer Mentoring", "Build a structured mentoring network pairing at-risk students with graduates in similar programs."),
-    ("04", "📊 Early Warning System", "Implement an automated risk score dashboard tracking GPA, tuition status, and attendance in real time."),
-    ("05", "🏫 Family Engagement", "Launch workshops for parents on how to support students academically — especially first-generation college families."),
+    ("🎓", "Program Dukungan Akademik",
+     "Fokus pada siswa dengan nilai rendah di semester pertama. Tugaskan tutor sebelum semester kedua dimulai."),
+    ("💰", "Perluasan Bantuan Keuangan",
+     "Perluas program beasiswa untuk kelompok berisiko tinggi — khususnya siswa lebih tua tanpa beasiswa."),
+    ("👥", "Program Mentoring",
+     "Bangun jaringan mentoring terstruktur yang memasangkan siswa berisiko dengan mahasiswa senior atau alumni."),
+    ("📊", "Sistem Early Warning",
+     "Implementasikan skor risiko otomatis yang memantau IPK, status SPP, dan kehadiran secara real-time."),
+    ("🏫", "Keterlibatan Orang Tua",
+     "Adakan workshop untuk orang tua tentang pentingnya dukungan akademik — terutama untuk keluarga pertama yang kuliah."),
 ]
 
-for num, title, desc in recs:
-    st.markdown(f"""
-    <div class="rec-item">
-      <span class="rec-num">{num}</span>
-      <div><b style="color:#e8eaf0;">{title}</b><br>
-      <span style="color:#6b7280;font-size:0.83rem;">{desc}</span></div>
-    </div>""", unsafe_allow_html=True)
+for i, (icon, title, desc) in enumerate(recs, 1):
+    with st.expander(f"{icon} {i}. {title}"):
+        st.write(desc)
 
-# ── Dataset Explorer ──────────────────────────────────────────────────────────
-st.markdown('<div class="section-title">Dataset Explorer</div>', unsafe_allow_html=True)
+st.divider()
 
-col_types = df.dtypes
-col_nulls = df.isnull().sum()
-
-col_grid_html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:1.5rem;">'
-for col in df.columns:
-    dtype = str(col_types[col])
-    nulls = col_nulls[col]
-    border = "border-left:3px solid #5b6af7;" if col == 'Target' else "border-left:3px solid #252a38;"
-    null_badge = f'<span style="font-size:0.62rem;color:#f7695b;">{nulls} null</span>' if nulls > 0 else ""
-    col_grid_html += f"""
-    <div style="background:#13161e;{border}border-radius:8px;padding:10px 12px;">
-      <div style="font-family:\'Space Mono\',monospace;font-size:0.68rem;color:#e8eaf0;
-                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-                  margin-bottom:4px;" title="{col}">{col}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.65rem;color:#5b6af7;background:rgba(91,106,247,0.1);
-                     padding:1px 6px;border-radius:3px;">{dtype}</span>
-        {null_badge}
-      </div>
-    </div>"""
-col_grid_html += '</div>'
-st.markdown(col_grid_html, unsafe_allow_html=True)
-
-if st.checkbox("Show raw data (first 100 rows)", value=False):
+# ── Data Preview ───────────────────────────────────────────────────────────────
+st.subheader("📋 Data Preview")
+if st.checkbox("Tampilkan 100 baris pertama"):
     st.dataframe(df.head(100), use_container_width=True)
